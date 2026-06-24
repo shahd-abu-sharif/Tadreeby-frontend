@@ -13,9 +13,14 @@ const apiRequest = async (endpoint, options = {}) => {
     ...options.headers,
   };
 
-  const config = {
+    const config = {
     ...options,
     headers,
+    // default to CORS mode for cross-origin requests; preserve any explicit option
+    mode: options.mode || 'cors',
+    // preserve credentials if caller set them (e.g., 'include')
+    ...(options.credentials ? { credentials: options.credentials } : {}),
+  };
   };
 
   try {

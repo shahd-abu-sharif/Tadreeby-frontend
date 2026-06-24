@@ -222,7 +222,7 @@ export function RegistrationPage() {
       // Map form data to API format (includes file to base64 conversion)
       const payload = await mapFormDataToAPI(data);
       
-      console.log("📤 Sending registration data to:", "https://tadreeby-backend-production.up.railway.app/api/auth/register/student");
+      console.log("📤 Sending registration data to:", "https://tadreeby-backend-production.up.railway.app/auth/register/student");
       console.log("📤 Payload size:", JSON.stringify(payload).length, "bytes");
       
       // Send as JSON
@@ -247,29 +247,37 @@ export function RegistrationPage() {
       setSubmitted(true);
     } catch (err) {
       console.error("❌ Registration error:", err);
-      
+
+      // Default message
       let errorMessage = "Registration failed. Please try again.";
-      
-      if (err.status === 400) {
-        // Handle validation errors from backend
-        if (err.data && typeof err.data === 'object') {
-          // If backend returns field-specific errors
-          const fieldErrors = err.data.errors || err.data;
-          const errorMessages = Object.values(fieldErrors).flat().join('. ');
-          errorMessage = errorMessages || "Invalid input. Please check your information.";
-        } else {
-          errorMessage = err.data?.message || "Invalid input. Please check your information.";
+
+      // Network/CORS failure (fetch throws TypeError when network fails)
+      if (err instanceof TypeError && /failed to fetch/i.test(err.message)) {
+        errorMessage = "Network error: unable to reach server. This can be caused by network issues or CORS policy. Please check your connection or try again later.";
+      } else if (err.status) {
+        // HTTP error responses normalized by apiRequest (contains status and data)
+        if (err.status === 400) {
+          if (err.data && typeof err.data === 'object') {
+            const fieldErrors = err.data.errors || err.data;
+            const errorMessages = Object.values(fieldErrors).flat().join('. ');
+            errorMessage = errorMessages || "Invalid input. Please check your information.";
+          } else {
+            errorMessage = err.data?.message || "Invalid input. Please check your information.";
+          }
+        } else if (err.status === 409) {
+          errorMessage = err.data?.message || "An account with this email or ID already exists.";
+        } else if (err.status === 413) {
+          errorMessage = "The verification document is too large. Please upload a smaller file (max 5MB).";
+        } else if (err.status >= 500) {
+          errorMessage = "Server error. Please try again later.";
+        } else if (err.data && err.data.message) {
+          errorMessage = err.data.message;
         }
-      } else if (err.status === 409) {
-        errorMessage = err.data?.message || "An account with this email or ID already exists.";
-      } else if (err.status === 500) {
-        errorMessage = "Server error. Please try again later.";
-      } else if (err.status === 413) {
-        errorMessage = "The verification document is too large. Please upload a smaller file (max 5MB).";
       } else if (err.message) {
+        // Fallback to any error.message available
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
     } finally {
       setIsLoading(false);

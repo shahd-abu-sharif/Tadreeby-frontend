@@ -13,7 +13,7 @@ const apiRequest = async (endpoint, options = {}) => {
     ...options.headers,
   };
 
-    const config = {
+  const config = {
     ...options,
     headers,
     // default to CORS mode for cross-origin requests; preserve any explicit option
@@ -21,7 +21,7 @@ const apiRequest = async (endpoint, options = {}) => {
     // preserve credentials if caller set them (e.g., 'include')
     ...(options.credentials ? { credentials: options.credentials } : {}),
   };
-  };
+  // ← REMOVED the extra }; here
 
   try {
     const url = `${API_BASE_URL}${endpoint}`;
